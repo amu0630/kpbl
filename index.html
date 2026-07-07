@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#C4956A" id="meta-theme-color">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="卡皮巴拉">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./assets/icon-192.png">
+<link rel="icon" type="image/svg+xml" href="./assets/icon.svg">
+<title>秋千摇摆 - 卡皮巴拉计时器</title>
+<style>
+/* ========== 全局变量 ========== */
+/* 白天主题（默认） */
+:root, [data-theme="light"] {
+  --bg-top: #E8F4FD;
+  --bg-bottom: #FFF0F5;
+  --capybara: #C4956A;
+  --capybara-dark: #8D6E4F;
+  --capybara-belly: #E8C9A0;
+  --swing-vine: #7BA05B;
+  --swing-seat: #A0845C;
+  --sakura: #FFB7C5;
+  --sakura-light: #FFD1DC;
+  --text: #5D4037;
+  --btn-primary: #FF8A80;
+  --btn-secondary: #B2DFDB;
+  --btn-reset: #FFCC80;
+  --card-bg: rgba(255,255,255,0.7);
+  --card-border: rgba(255,255,255,0.9);
+  --shadow: 0 4px 20px rgba(0,0,0,0.08);
+  --swing-amplitude: 12deg;
+  --branch-color: #8D6E4F;
+  --branch-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+/* 黑夜主题 */
+[data-theme="dark"] {
+  --bg-top: #141432;
+  --bg-bottom: #0a0a22;
+  --capybara: #B08560;
+  --capybara-dark: #6D4E3F;
+  --capybara-belly: #D4B898;
+  --swing-vine: #5a8040;
+  --swing-seat: #7a6040;
+  --sakura: #FFD700;
+  --sakura-light: #FFEC8B;
+  --text: #D5CFC0;
+  --btn-primary: #7C5CBF;
+  --btn-secondary: #4A6FA5;
+  --btn-reset: #5C4A7A;
+  --card-bg: rgba(20,20,50,0.75);
+  --card-border: rgba(100,100,180,0.4);
+  --shadow: 0 4px 20px rgba(0,0,0,0.4);
+  --swing-amplitude: 12deg;
+  --branch-color: #5a4030;
+  --branch-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+/* ========== 基础重置 ========== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 70%, #F5E6D3 100%);
+  display: flex; justify-content: center; align-items: center;
+  user-select: none; -webkit-user-select: none;
+}
+
+/* ========== Canvas 樱花背景 ========== */
+#sakuraCanvas {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 0;
+}
+
+/* ========== 主容器 ========== */
+.main-container {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column; align-items: center;
+  width: 100%; max-width: 500px; padding: 20px;
+  gap: 16px;
+}
+
+/* ========== 计时数字卡片 ========== */
+.timer-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border: 2px solid var(--card-border);
+  border-radius: 24px;
+  padding: 12px 32px;
+  box-shadow: var(--shadow);
+  display: flex; flex-direction: column; align-items: center;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.timer-card.warning { border-color: #FF8A80; animation: pulse-warn 0.6s ease-in-out infinite; }
+
+.mode-label {
+  font-size: 14px; color: var(--text); opacity: 0.7;
+  letter-spacing: 4px; margin-bottom: 4px;
+  transition: all 0.3s;
+}
+
+.timer-display {
+  font-size: 72px; font-weight: 700; color: var(--text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 4px; line-height: 1;
+  transition: color 0.3s;
+}
+.timer-display.warning { color: #E53935; }
+
+/* ========== 秋千区域 ========== */
+.swing-scene {
+  position: relative;
+  width: 320px; height: 340px;
+  display: flex; justify-content: center;
+  align-items: flex-start;
+}
+
+/* 树枝支点 */
+.branch {
+  position: absolute; top: 0;
+  width: 160px; height: 28px;
+  background: linear-gradient(180deg, var(--branch-color), #6D4C41);
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 2;
+}
+.branch::before {
+  content: ""; position: absolute; top: -6px; left: 20px;
+  width: 12px; height: 18px; background: #7BA05B; border-radius: 50%;
+}
+.branch::after {
+  content: ""; position: absolute; top: -8px; right: 30px;
+  width: 10px; height: 14px; background: #7BA05B; border-radius: 50%;
+}
+
+/* 秋千整体 — 带摆动动画 */
+.swing-group {
+  position: absolute; top: 20px;
+  width: 120px; height: 300px;
+  transform-origin: 60px 8px;
+  animation: swing 1s ease-in-out infinite;
+  animation-play-state: paused;
+}
+.swing-group.running { animation-play-state: running; }
+.swing-group.ending { animation: swing-small 1s ease-in-out infinite; }
+.swing-group.stopped { animation: none; transform: rotate(0deg); }
+
+@keyframes swing {
+  0%, 100% { transform: rotate(calc(-1 * var(--swing-amplitude))); }
+  50% { transform: rotate(var(--swing-amplitude)); }
+}
+@keyframes swing-small {
+  0%, 100% { transform: rotate(-4deg); }
+  50% { transform: rotate(4deg); }
+}
+
+/* 藤蔓 */
+.vine {
+  position: absolute; top: 8px;
+  width: 4px; height: 140px;
+  background: linear-gradient(180deg, var(--swing-vine), #5D8A3C);
+  border-radius: 2px;
+  transform-origin: top center;
+}
+.vine-left { left: 30px; }
+.vine-right { right: 30px; }
+
+/* 秋千座板 */
+.seat {
+  position: absolute; top: 145px; left: 50%;
+  transform: translateX(-50%);
+  width: 100px; height: 16px;
+  background: linear-gradient(180deg, #C4A87C, var(--swing-seat));
+  border-radius: 8px;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+}
+
+/* ========== 卡皮巴拉 ========== */
+/* ========== 卡皮巴拉（升级版 — 毛绒3D + 眨眼 + 抖动）========== */
+.capybara {
+  position: absolute; top: 28px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  animation: capyIdle 3s ease-in-out infinite;
+}
+@keyframes capyIdle {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  30% { transform: translateX(-50%) translateY(-2px); }
+  70% { transform: translateX(-50%) translateY(1px); }
+}
+
+/* 身体 — 胖乎乎毛绒椭圆 */
+.capy-body {
+  width: 110px; height: 74px;
+  background: radial-gradient(ellipse at 50% 25%, #DFB88A, #C4956A 55%, #A67B5B 100%);
+  border-radius: 55px 55px 44px 44px;
+  position: relative;
+  box-shadow: 
+    inset 0 10px 24px rgba(255,255,255,0.18),
+    inset 0 -10px 18px rgba(0,0,0,0.12),
+    0 6px 16px rgba(0,0,0,0.18);
+}
+
+/* 肚皮 */
+.capy-belly {
+  position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+  width: 70px; height: 40px;
+  background: linear-gradient(180deg, #EED9B8, #E0C8A0);
+  border-radius: 35px 35px 24px 24px;
+  box-shadow: inset 0 3px 6px rgba(255,255,255,0.3);
+}
+
+/* 耳朵 — 小圆片带内耳 */
+.capy-ear {
+  position: absolute; top: -10px;
+  width: 20px; height: 16px;
+  background: radial-gradient(circle at 50% 30%, #9E7A5A, #7A5C40);
+  border-radius: 50%;
+}
+.capy-ear.left { left: 16px; transform: rotate(-20deg); }
+.capy-ear.right { right: 16px; transform: rotate(20deg); }
+.capy-ear::after {
+  content: ""; position: absolute; top: 3px; left: 4px;
+  width: 10px; height: 8px; 
+  background: radial-gradient(circle, #F0C4A0, #D4A080);
+  border-radius: 50%;
+}
+.capy-ear.left { animation: earWiggleL 4s ease-in-out infinite; }
+.capy-ear.right { animation: earWiggleR 4s ease-in-out infinite; }
+@keyframes earWiggleL {
+  0%, 80%, 100% { transform: rotate(-20deg); }
+  85% { transform: rotate(-32deg); }
+  90% { transform: rotate(-12deg); }
+}
+@keyframes earWiggleR {
+  0%, 80%, 100% { transform: rotate(20deg); }
+  85% { transform: rotate(32deg); }
+  90% { transform: rotate(12deg); }
+}
+
+/* 眼睛 — 带高光和眨眼眼睑 */
+.capy-eyes {
+  position: absolute; top: 22px; left: 50%;
+  transform: translateX(-50%);
+  display: flex; gap: 26px;
+}
+.capy-eye {
+  width: 14px; height: 14px;
+  background: #2E1A0E;
+  border-radius: 50%;
+  position: relative;
+  overflow: hidden;
+}
+/* 高光 */
+.capy-eye::before {
+  content: ""; position: absolute; top: 3px; left: 3px;
+  width: 5px; height: 5px; background: white; border-radius: 50%;
+  z-index: 2;
+}
+/* 眼睑 — 眨眼用 */
+.capy-eye::after {
+  content: ""; position: absolute; top: 0; left: 0;
+  width: 100%; height: 0%;
+  background: #C4956A;
+  z-index: 3;
+}
+.capybara.blinking .capy-eye::after {
+  animation: blinkAction 0.25s ease-in-out;
+}
+@keyframes blinkAction {
+  0%, 100% { height: 0%; }
+  50% { height: 100%; }
+}
+
+/* chill 闭眼表情 */
+.capybara.chill .capy-eye {
+  height: 4px; border-radius: 3px;
+  background: #5D3A22;
+}
+.capybara.chill .capy-eye::before { opacity: 0; }
+
+/* awake 睁大眼 */
+.capybara.awake .capy-eye {
+  width: 15px; height: 15px;
+}
+
+/* surprised 惊喜圆眼 */
+.capybara.surprised .capy-eye {
+  width: 18px; height: 18px;
+}
+
+/* 鼻子 — 小黑鼻 + 微动 */
+.capy-nose {
+  position: absolute; top: 34px; left: 50%;
+  transform: translateX(-50%);
+  width: 16px; height: 12px;
+  background: radial-gradient(ellipse, #3E2723, #1A0E08);
+  border-radius: 50%;
+  animation: noseTwitch 6s ease-in-out infinite;
+}
+@keyframes noseTwitch {
+  0%, 85%, 100% { transform: translateX(-50%) scale(1); }
+  90% { transform: translateX(-50%) scale(1.15, 0.85); }
+}
+
+/* 嘴巴 — 微笑 */
+.capy-mouth {
+  position: absolute; top: 43px; left: 50%;
+  transform: translateX(-50%);
+  width: 22px; height: 10px;
+  border-bottom: 2.5px solid #5D3A22;
+  border-radius: 0 0 50% 50%;
+}
+.capybara.surprised .capy-mouth {
+  width: 14px; height: 14px;
+  border: 2.5px solid #5D3A22;
+  border-radius: 50%;
+  border-bottom-color: transparent;
+}
+
+/* 胡须 */
+.capy-whiskers { position: absolute; top: 36px; }
+.capy-whiskers::before, .capy-whiskers::after {
+  content: ""; position: absolute; width: 16px; height: 1.5px;
+  background: #9E8E7E; border-radius: 1px; transform-origin: 0 50%;
+}
+.capy-whiskers.left { left: -18px; }
+.capy-whiskers.left::before { transform: rotate(-15deg); top: 0; }
+.capy-whiskers.left::after { transform: rotate(-30deg); top: 5px; }
+.capy-whiskers.right { right: -18px; }
+.capy-whiskers.right::before { transform: rotate(15deg) scaleX(-1); top: 0; right: 0; }
+.capy-whiskers.right::after { transform: rotate(30deg) scaleX(-1); top: 5px; right: 0; }
+
+/* 腮红 */
+.capy-blush {
+  position: absolute; top: 32px;
+  width: 14px; height: 9px;
+  background: rgba(255,140,130,0.45);
+  border-radius: 50%;
+}
+.capy-blush.left { left: 6px; }
+.capy-blush.right { right: 6px; }
+
+/* 小尾巴 */
+.capy-tail {
+  position: absolute; top: 48px; left: -14px;
+  width: 16px; height: 12px;
+  background: radial-gradient(circle, #A67B5B, #8A6040);
+  border-radius: 50%;
+  transform: rotate(35deg);
+  box-shadow: 0 2px 3px rgba(0,0,0,0.15);
+}
+
+/* 前爪 + 肉垫 */
+.capy-paws {
+  position: absolute; bottom: -6px; left: 50%;
+  transform: translateX(-50%);
+  display: flex; gap: 20px;
+}
+.capy-paw {
+  width: 24px; height: 15px;
+  background: radial-gradient(ellipse at 50% 40%, #9E7A5A, #7A5C40);
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  position: relative;
+}
+.capy-paw::after {
+  content: ""; position: absolute; bottom: 2px; left: 50%;
+  transform: translateX(-50%);
+  width: 10px; height: 5px;
+  background: rgba(200,150,120,0.4);
+  border-radius: 50%;
+}
+
+/* 弹跳升级 */
+.capybara.bouncing {
+  animation: bounce 0.35s ease-in-out 4 !important;
+}
+
+/* 恐慌 — 上蹿下跳 */
+.capybara.panic {
+  animation: panicShake 0.25s ease-in-out infinite !important;
+}
+@keyframes panicShake {
+  0%, 100% { transform: translateX(-50%) translateY(0) rotate(0deg); }
+  25% { transform: translateX(-50%) translateY(-18px) rotate(-4deg); }
+  50% { transform: translateX(-50%) translateY(-4px) rotate(0deg); }
+  75% { transform: translateX(-50%) translateY(-22px) rotate(4deg); }
+}
+@keyframes bounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  40% { transform: translateX(-50%) translateY(-24px); }
+  60% { transform: translateX(-50%) translateY(-8px); }
+}
+
+/* ========== 控制区 ========== */
+.controls {
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  width: 100%;
+}
+
+/* 时间调节行 */
+.time-adjust {
+  display: flex; align-items: center; gap: 18px;
+}
+.adjust-btn {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 2px solid var(--btn-secondary);
+  background: white;
+  font-size: 22px; color: var(--text);
+  cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.adjust-btn:hover { background: var(--btn-secondary); transform: scale(1.08); }
+.adjust-btn:active { transform: scale(0.94); }
+
+/* 主题按钮 */
+.theme-row { display: flex; justify-content: center; margin-bottom: 4px; }
+.theme-btn {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 2px solid var(--btn-secondary);
+  background: var(--card-bg);
+  font-size: 20px; cursor: pointer;
+  transition: all 0.3s;
+  line-height: 1;
+}
+.theme-btn:hover { transform: scale(1.1) rotate(20deg); }
+.theme-btn:active { transform: scale(0.9); }
+.install-btn {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 2px solid var(--btn-primary);
+  background: var(--card-bg);
+  font-size: 18px; cursor: pointer;
+  transition: all 0.3s;
+  line-height: 1;
+  margin-left: 8px;
+}
+.install-btn:hover { transform: scale(1.1); background: var(--btn-primary); }
+.install-btn:active { transform: scale(0.9); }
+.install-btn.hidden { display: none; }
+
+/* 模式标签 */
+.mode-toggle {
+  padding: 6px 18px;
+  border-radius: 20px; border: 2px solid var(--btn-secondary);
+  background: white; font-size: 14px; color: var(--text);
+  cursor: pointer; transition: all 0.3s;
+  letter-spacing: 2px;
+}
+.mode-toggle:hover { background: var(--btn-secondary); }
+.mode-toggle.stopwatch { border-color: #FFE0B2; background: #FFF8E1; }
+
+/* 主按钮行 */
+.btn-row {
+  display: flex; gap: 16px;
+}
+
+.btn {
+  border: none; border-radius: 50px;
+  font-size: 18px; font-weight: 600;
+  padding: 14px 32px; cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 2px;
+  box-shadow: var(--shadow);
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(0,0,0,0.12); }
+.btn:active { transform: scale(0.95); }
+
+.btn-start {
+  background: var(--btn-primary); color: white;
+  min-width: 140px; font-size: 20px;
+}
+.btn-start.paused { background: #66BB6A; }
+.btn-reset {
+  background: white; color: var(--text);
+  border: 2px solid var(--btn-reset);
+}
+
+/* ========== 响应式 ========== */
+@media (max-width: 480px) {
+  .main-container { padding: 12px; gap: 10px; }
+  .timer-display { font-size: 52px; }
+  .timer-card { padding: 10px 20px; border-radius: 18px; }
+  .swing-scene { width: 260px; height: 280px; transform: scale(0.8); transform-origin: top center; }
+  .btn { padding: 12px 22px; font-size: 15px; }
+  .btn-start { min-width: 110px; font-size: 17px; }
+  .controls { gap: 10px; }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  .swing-scene { width: 300px; height: 320px; }
+  .timer-display { font-size: 64px; }
+}
+
+/* ========== 辅助动画 ========== */
+@keyframes pulse-warn {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+/* 模式切换过渡 */
+.fade-transition { animation: fadeIn 0.35s ease-out; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 隐藏时间调节（正计时模式）*/
+.time-adjust.hidden { display: none; }
+</style>
+</head>
+<body>
+
+<!-- 樱花 Canvas -->
+<canvas id="sakuraCanvas"></canvas>
+
+<!-- 主容器 -->
+<div class="main-container">
+  <!-- 计时数字 -->
+  <div class="timer-card" id="timerCard">
+    <span class="mode-label" id="modeLabel">倒计时</span>
+    <div class="timer-display" id="timerDisplay">05:00</div>
+  </div>
+
+  <!-- 秋千场景 -->
+  <div class="swing-scene">
+    <div class="branch"></div>
+    <div class="swing-group" id="swingGroup">
+      <div class="vine vine-left"></div>
+      <div class="vine vine-right"></div>
+      <div class="seat"></div>
+      <div class="capybara chill" id="capybara">
+        <div class="capy-tail"></div>
+        <div class="capy-body">
+          <div class="capy-ear left"></div>
+          <div class="capy-ear right"></div>
+          <div class="capy-eyes">
+            <div class="capy-eye"></div>
+            <div class="capy-eye"></div>
+          </div>
+          <div class="capy-whiskers left"></div>
+          <div class="capy-whiskers right"></div>
+          <div class="capy-nose"></div>
+          <div class="capy-mouth"></div>
+          <div class="capy-blush left"></div>
+          <div class="capy-blush right"></div>
+          <div class="capy-belly"></div>
+        </div>
+        <div class="capy-paws">
+          <div class="capy-paw"></div>
+          <div class="capy-paw"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 控制区 -->
+  <div class="controls">
+    <div class="theme-row">
+      <button class="theme-btn" id="btnTheme" title="切换主题">??</button>
+        <button class="install-btn hidden" id="btnInstall" title="安装应用">??</button>
+    </div>
+    <button class="mode-toggle" id="btnMode" title="切换计时模式">倒计时</button>
+    <div class="time-adjust" id="timeAdjust">
+      <button class="adjust-btn" id="btnMinus" title="减1分钟">?</button>
+      <button class="adjust-btn" id="btnPlus" title="加1分钟">+</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-start" id="btnStart">开始</button>
+      <button class="btn btn-reset" id="btnReset">重置</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== 音效引擎 ====================
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+function playChime(freq = 880, duration = 0.15, type = "sine", vol = 0.3) {
+  try {
+    if (!audioCtx) audioCtx = new AudioCtx();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + duration);
+  } catch(e) {}
+}
+function playEndSound() {
+  playChime(523, 0.3, "triangle");
+  setTimeout(() => playChime(659, 0.3, "triangle"), 200);
+  setTimeout(() => playChime(784, 0.4, "triangle"), 400);
+}
+// 告警蜂鸣 — 每秒一声，越接近0越急促
+let alarmInterval = null;
+function startAlarm() {
+  if (alarmInterval) return;
+  playAlarmBeep();
+  alarmInterval = setInterval(() => {
+    if (!isRunning || !isCountdown) { stopAlarm(); return; }
+    playAlarmBeep();
+    // 最后5秒更急促（0.5s一次）
+    if (totalSeconds <= 5 && alarmInterval) {
+      clearInterval(alarmInterval);
+      playAlarmBeep();
+      alarmInterval = setInterval(() => {
+        if (!isRunning || !isCountdown || totalSeconds <= 0) { stopAlarm(); return; }
+        playAlarmBeep();
+      }, 500);
+    }
+  }, 1000);
+}
+function playAlarmBeep() {
+  if (totalSeconds <= 3) {
+    playChime(1200, 0.12, "square", 0.25);
+  } else if (totalSeconds <= 5) {
+    playChime(900, 0.12, "square", 0.2);
+  } else {
+    playChime(660, 0.1, "square", 0.15);
+  }
+}
+function stopAlarm() {
+  if (alarmInterval) { clearInterval(alarmInterval); alarmInterval = null; }
+}
+
+// ==================== 樱花粒子系统 ====================
+const canvas = document.getElementById("sakuraCanvas");
+const ctx = canvas.getContext("2d");
+let petals = [];
+let canvasW, canvasH;
+
+function resizeCanvas() {
+  canvasW = canvas.width = window.innerWidth;
+  canvasH = canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
+
+class Petal {
+  constructor() {
+    this.reset(true);
+    this.y = Math.random() * canvasH;
+  }
+  reset(init = false) {
+    this.x = Math.random() * (canvasW + 60) - 30;
+    this.y = init ? Math.random() * canvasH : -20;
+    this.size = 6 + Math.random() * 12;
+    this.speed = 0.3 + Math.random() * 1.5;
+    this.rotation = Math.random() * Math.PI * 2;
+    this.rotSpeed = (Math.random() - 0.5) * 0.04;
+    this.sway = Math.random() * 2;
+    this.swaySpeed = 0.01 + Math.random() * 0.02;
+    this.opacity = 0.35 + Math.random() * 0.55;
+    this.twinkle = Math.random() * Math.PI * 2;
+  }
+  update() {
+    this.y += this.speed;
+    this.x += Math.sin(this.sway) * 0.5;
+    this.sway += this.swaySpeed;
+    this.rotation += this.rotSpeed;
+    this.twinkle += 0.03;
+    if (this.y > canvasH + 20) this.reset();
+  }
+  draw(ctx, isNight) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rotation);
+    if (isNight) {
+      // 黑夜：画星星
+      const alpha = this.opacity * (0.5 + 0.5 * Math.sin(this.twinkle));
+      ctx.globalAlpha = alpha;
+      const starSize = this.size * 0.6;
+      ctx.fillStyle = "#FFE8A0";
+      ctx.shadowColor = "#FFD700";
+      ctx.shadowBlur = starSize * 1.5;
+      ctx.beginPath();
+      // 四角星
+      for (let i = 0; i < 4; i++) {
+        const angle = (i * Math.PI) / 2;
+        ctx.lineTo(Math.cos(angle) * starSize, Math.sin(angle) * starSize);
+        const mid = angle + Math.PI / 4;
+        ctx.lineTo(Math.cos(mid) * starSize * 0.3, Math.sin(mid) * starSize * 0.3);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    } else {
+      // 白天：画花瓣
+      ctx.globalAlpha = this.opacity;
+      const c = Math.random();
+      ctx.fillStyle = c < 0.6 ? "#FFB7C5" : "#FFD1DC";
+      ctx.beginPath();
+      ctx.ellipse(0, 0, this.size * 0.5, this.size * 0.25, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(0, -1, this.size * 0.2, this.size * 0.15, 0.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+const PETAL_COUNT = 45;
+for (let i = 0; i < PETAL_COUNT; i++) petals.push(new Petal());
+
+let isNightMode = false;
+function animateSakura() {
+  ctx.clearRect(0, 0, canvasW, canvasH);
+  petals.forEach(p => { p.update(); p.draw(ctx, isNightMode); });
+  requestAnimationFrame(animateSakura);
+}
+animateSakura();
+
+// ==================== 计时器逻辑 ====================
+const timerDisplay = document.getElementById("timerDisplay");
+const timerCard = document.getElementById("timerCard");
+const modeLabel = document.getElementById("modeLabel");
+const btnMode = document.getElementById("btnMode");
+const btnStart = document.getElementById("btnStart");
+const btnReset = document.getElementById("btnReset");
+const btnPlus = document.getElementById("btnPlus");
+const btnMinus = document.getElementById("btnMinus");
+const timeAdjust = document.getElementById("timeAdjust");
+const swingGroup = document.getElementById("swingGroup");
+const capybara = document.getElementById("capybara");
+
+let isCountdown = true;       // true=倒计时, false=正计时
+let isRunning = false;
+let totalSeconds = 300;       // 默认 5 分钟
+let elapsedSeconds = 0;       // 正计时已过秒数
+let countdownTarget = 300;    // 倒计时目标秒数
+let timerInterval = null;
+let endingAnimTimeout = null;
+
+function formatTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return String(m).padStart(2, "0") + ":" + String(sec).padStart(2, "0");
+}
+
+function updateDisplay() {
+  let displaySec;
+  if (isCountdown) {
+    displaySec = totalSeconds;
+  } else {
+    displaySec = elapsedSeconds;
+  }
+  timerDisplay.textContent = formatTime(displaySec);
+  
+  // 倒计时最后10秒警告
+  if (isCountdown && isRunning && totalSeconds <= 10 && totalSeconds > 0) {
+    timerDisplay.classList.add("warning");
+    timerCard.classList.add("warning");
+    swingGroup.classList.add("ending");
+    swingGroup.classList.remove("running");
+  } else if (isRunning) {
+    timerDisplay.classList.remove("warning");
+    timerCard.classList.remove("warning");
+    swingGroup.classList.remove("ending");
+    swingGroup.classList.add("running");
+  }
+}
+
+function startTimer() {
+  if (isRunning) return;
+  isRunning = true;
+  btnStart.textContent = "暂停";
+  btnStart.classList.add("paused");
+  swingGroup.classList.add("running");
+  swingGroup.classList.remove("stopped");
+  setExpression("awake");
+  
+  timerInterval = setInterval(() => {
+    if (isCountdown) {
+      totalSeconds--;
+      if (totalSeconds <= 0) {
+        totalSeconds = 0;
+        stopAlarm();
+        finishTimer();
+        return;
+      }
+      if (totalSeconds <= 10) {
+        timerDisplay.classList.add("warning");
+        timerCard.classList.add("warning");
+        swingGroup.classList.add("ending");
+        swingGroup.classList.remove("running");
+        if (totalSeconds <= 5) {
+          setExpression("panic");
+        }
+        if (!alarmInterval && totalSeconds <= 10) startAlarm();
+      }
+    } else {
+      elapsedSeconds++;
+      if (elapsedSeconds >= 5999) {
+        elapsedSeconds = 5999;
+        stopAlarm();
+        finishTimer();
+        return;
+      }
+    }
+    updateDisplay();
+  }, 1000);
+}
+
+function pauseTimer() {
+  if (!isRunning) return;
+  isRunning = false;
+  clearInterval(timerInterval);
+  timerInterval = null;
+  stopAlarm();
+  btnStart.textContent = "开始";
+  btnStart.classList.remove("paused");
+  swingGroup.classList.remove("running", "ending");
+  swingGroup.classList.add("stopped");
+  setExpression("chill");
+  timerDisplay.classList.remove("warning");
+  timerCard.classList.remove("warning");
+}
+
+function resetTimer() {
+  pauseTimer();
+  stopAlarm();
+  if (endingAnimTimeout) { clearTimeout(endingAnimTimeout); endingAnimTimeout = null; }
+  setExpression("chill");
+  swingGroup.classList.remove("ending");
+  
+  if (isCountdown) {
+    totalSeconds = countdownTarget;
+  } else {
+    elapsedSeconds = 0;
+  }
+  updateDisplay();
+}
+
+function finishTimer() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+  isRunning = false;
+  stopAlarm();
+  btnStart.textContent = "开始";
+  btnStart.classList.remove("paused");
+  
+  swingGroup.classList.remove("running", "ending");
+  swingGroup.classList.add("stopped");
+  setExpression("surprised");
+  
+  updateDisplay();
+  playEndSound();
+  
+  // 庆祝动画 — 弹跳
+  capybara.classList.add("bouncing");
+  
+  // 樱花爆发
+  const burstCount = 40;
+  const burstPetals = [];
+  for (let i = 0; i < burstCount; i++) {
+    const p = new Petal();
+    p.y = canvasH * 0.35 + Math.random() * 120;
+    p.x = canvasW * 0.2 + Math.random() * canvasW * 0.6;
+    p.speed = 1.5 + Math.random() * 3.5;
+    p.opacity = 0.6 + Math.random() * 0.4;
+    burstPetals.push(p);
+  }
+  petals.push(...burstPetals);
+  
+  // 停留在结束状态，等待手动重置
+  endingAnimTimeout = setTimeout(() => {
+    capybara.classList.remove("bouncing");
+    setExpression("surprised");
+    timerDisplay.classList.remove("warning");
+    timerCard.classList.remove("warning");
+  }, 3000);
+}
+
+function switchMode() {
+  if (isRunning) pauseTimer();
+  stopAlarm();
+  if (endingAnimTimeout) { clearTimeout(endingAnimTimeout); endingAnimTimeout = null; }
+  setExpression("chill");
+  timerDisplay.classList.remove("warning");
+  timerCard.classList.remove("warning");
+  
+  isCountdown = !isCountdown;
+  
+  if (isCountdown) {
+    totalSeconds = countdownTarget;
+    modeLabel.textContent = "倒计时";
+    btnMode.textContent = "倒计时";
+    btnMode.classList.remove("stopwatch");
+    timeAdjust.classList.remove("hidden");
+  } else {
+    elapsedSeconds = 0;
+    modeLabel.textContent = "正计时";
+    btnMode.textContent = "正计时";
+    btnMode.classList.add("stopwatch");
+    timeAdjust.classList.add("hidden");
+  }
+  
+  updateDisplay();
+  
+  timerCard.classList.remove("fade-transition");
+  void timerCard.offsetWidth;
+  timerCard.classList.add("fade-transition");
+}
+
+// ==================== 表情管理 ====================
+function setExpression(expr) {
+  capybara.classList.remove("chill", "awake", "surprised", "panic", "bouncing");
+  if (expr === "chill") capybara.classList.add("chill");
+  else if (expr === "awake") capybara.classList.add("awake");
+  else if (expr === "surprised") capybara.classList.add("surprised");
+  else if (expr === "panic") capybara.classList.add("panic");
+}
+
+// ==================== 眨眼动画 ====================
+function triggerBlink() {
+  if (capybara.classList.contains("chill")) return; // 闭眼时不眨眼
+  capybara.classList.add("blinking");
+  setTimeout(() => capybara.classList.remove("blinking"), 260);
+}
+function scheduleBlink() {
+  const delay = 2000 + Math.random() * 4000; // 2~6秒随机
+  setTimeout(() => {
+    triggerBlink();
+    scheduleBlink();
+  }, delay);
+}
+scheduleBlink();
+
+function adjustTime(delta) {
+  if (!isCountdown || isRunning) return;
+  countdownTarget = Math.min(3600, Math.max(60, countdownTarget + delta * 60));
+  totalSeconds = countdownTarget;
+  updateDisplay();
+}
+
+// ==================== 按钮事件 ====================
+btnStart.addEventListener("click", () => {
+  if (isRunning) pauseTimer();
+  else startTimer();
+});
+
+btnReset.addEventListener("click", resetTimer);
+btnMode.addEventListener("click", switchMode);
+btnPlus.addEventListener("click", () => adjustTime(1));
+btnMinus.addEventListener("click", () => adjustTime(-1));
+
+// 键盘快捷键
+document.addEventListener("keydown", (e) => {
+  if (e.code === "Space") {
+    e.preventDefault();
+    if (isRunning) pauseTimer(); else startTimer();
+  } else if (e.code === "KeyR") {
+    resetTimer();
+  } else if (e.code === "KeyM") {
+    switchMode();
+  } else if (e.code === "ArrowUp" || e.code === "ArrowRight") {
+    adjustTime(1);
+  } else if (e.code === "ArrowDown" || e.code === "ArrowLeft") {
+    adjustTime(-1);
+  }
+});
+
+// ==================== 主题管理 ====================
+const btnTheme = document.getElementById("btnTheme");
+let themeMode = "auto"; // "light" | "dark" | "auto"
+
+function getSystemTheme() {
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function applyTheme(theme) {
+  if (theme === "auto") {
+    const sys = getSystemTheme();
+    document.documentElement.setAttribute("data-theme", sys);
+    isNightMode = sys === "dark";
+    btnTheme.textContent = sys === "dark" ? "??" : "??";
+  } else {
+    document.documentElement.setAttribute("data-theme", theme);
+    isNightMode = theme === "dark";
+    btnTheme.textContent = theme === "dark" ? "??" : "??";
+  }
+}
+
+function cycleTheme() {
+  if (themeMode === "auto") themeMode = "dark";
+  else if (themeMode === "dark") themeMode = "light";
+  else themeMode = "auto";
+  applyTheme(themeMode);
+}
+
+btnTheme.addEventListener("click", cycleTheme);
+
+// 监听系统主题变化
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+  if (themeMode === "auto") applyTheme("auto");
+});
+
+// ==================== 初始化 ====================
+applyTheme("auto");
+updateDisplay();
+</script>
+<script>
+// PWA 安装提示
+let deferredPrompt = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const btn = document.getElementById("btnInstall");
+  if (btn) btn.classList.remove("hidden");
+});
+
+// 注册 Service Worker（PWA）
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./sw.js").then(() => console.log("SW registered"));
+
+// 安装按钮点击
+document.getElementById("btnInstall").addEventListener("click", async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById("btnInstall").classList.add("hidden");
+  console.log("PWA install:", outcome);
+});
+
+// 已安装则隐藏按钮
+window.addEventListener("appinstalled", () => {
+  document.getElementById("btnInstall").classList.add("hidden");
+});
+}
+</script>
+</body>
+</html>
+
+
+
+
