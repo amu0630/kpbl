@@ -439,6 +439,19 @@ body {
 }
 .install-btn:hover { transform: scale(1.1); background: var(--btn-primary); }
 .install-btn:active { transform: scale(0.9); }
+.download-btn {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 2px solid var(--btn-secondary);
+  background: var(--card-bg);
+  font-size: 18px; cursor: pointer;
+  transition: all 0.3s;
+  line-height: 1;
+  margin-left: 8px;
+  text-decoration: none; display: inline-flex; align-items: center; justify-content: center;
+  color: var(--text);
+}
+.download-btn:hover { transform: scale(1.1); background: var(--btn-secondary); }
+.download-btn:active { transform: scale(0.9); }
 .install-btn.hidden { display: none; }
 
 /* 模式标签 */
@@ -561,6 +574,7 @@ body {
     <div class="theme-row">
       <button class="theme-btn" id="btnTheme" title="切换主题">☀️</button>
         <button class="install-btn hidden" id="btnInstall" title="安装应用">📲</button>
+      <a class="download-btn" id="btnDownload" title="下载 App" href="https://github.com/amu0630/kpbl/releases/download/v1.0.0/kapibala-timer.apk" target="_blank">📥</a>
     </div>
     <button class="mode-toggle" id="btnMode" title="切换计时模式">倒计时</button>
     <div class="time-adjust" id="timeAdjust">
