@@ -559,12 +559,12 @@ body {
   <!-- 控制区 -->
   <div class="controls">
     <div class="theme-row">
-      <button class="theme-btn" id="btnTheme" title="切换主题">??</button>
-        <button class="install-btn hidden" id="btnInstall" title="安装应用">??</button>
+      <button class="theme-btn" id="btnTheme" title="切换主题">☀️</button>
+        <button class="install-btn hidden" id="btnInstall" title="安装应用">📲</button>
     </div>
     <button class="mode-toggle" id="btnMode" title="切换计时模式">倒计时</button>
     <div class="time-adjust" id="timeAdjust">
-      <button class="adjust-btn" id="btnMinus" title="减1分钟">?</button>
+      <button class="adjust-btn" id="btnMinus" title="减1分钟">−</button>
       <button class="adjust-btn" id="btnPlus" title="加1分钟">+</button>
     </div>
     <div class="btn-row">
@@ -978,11 +978,11 @@ function applyTheme(theme) {
     const sys = getSystemTheme();
     document.documentElement.setAttribute("data-theme", sys);
     isNightMode = sys === "dark";
-    btnTheme.textContent = sys === "dark" ? "??" : "??";
+    btnTheme.textContent = sys === "dark" ? "🌙" : "☀️";
   } else {
     document.documentElement.setAttribute("data-theme", theme);
     isNightMode = theme === "dark";
-    btnTheme.textContent = theme === "dark" ? "??" : "??";
+    btnTheme.textContent = theme === "dark" ? "🌙" : "☀️";
   }
 }
 
