@@ -34,8 +34,8 @@
   .btn-pwa { background: #e3f2fd; color: #1565c0; border: 2px solid #90caf9; }
   .btn-icon { font-size: 28px; }
   .btn-label { font-size: 12px; color: #888; font-weight: 400; }
-  .mirrors { margin-top: 16px; font-size: 12px; color: #aaa; }
-  .mirrors a { color: #888; margin: 0 6px; text-decoration: none; }
+  .mirrors { margin-top: 8px; font-size: 12px; color: #aaa; }
+  .mirrors a { color: #888; margin: 0 4px; text-decoration: none; }
   .mirrors a:hover { color: #333; text-decoration: underline; }
   .footer { margin-top: 28px; font-size: 12px; color: #bbb; }
   .footer a { color: #bbb; }
@@ -45,33 +45,26 @@
 <div class="card">
   <div class="icon">🐹</div>
   <h1>卡皮巴拉计时器</h1>
-  <p class="sub">选一个平台下载吧~</p>
+  <p class="sub">选你的设备~</p>
   <div class="platforms">
-    <!-- Android -->    <div style="display:flex;flex-direction:column;gap:8px">
-      <a class="btn btn-android" href="https://ghproxy.net/https://github.com/amu0630/kpbl/releases/download/v1.0.0/kapibala-timer.apk">
-        <span class="btn-icon">🤖</span>
-        <span>Android 下载 APK<span class="btn-label"><br>国内加速 · 下载后直接安装</span></span>
-      </a>
-      <div class="mirrors">
-        加载失败？试试
-        <a href="https://cdn.jsdelivr.net/gh/amu0630/kpbl@main/kapibala-timer.apk">CDN 1</a>
-        <a href="https://github.com/amu0630/kpbl/releases/download/v1.0.0/kapibala-timer.apk">GitHub</a>
-      </div>
-    </div>
-    <!-- iOS -->    <div style="display:flex;flex-direction:column;gap:8px">
-      <a class="btn btn-ios" href="https://amu0630.github.io/kpbl">
-        <span class="btn-icon">🍎</span>
-        <span>iPhone / iPad<span class="btn-label"><br>Safari 打开 → 分享 → 添加到主屏幕</span></span>
-      </a>
-    </div>
-    <!-- Desktop -->    <div style="display:flex;flex-direction:column;gap:8px">
-      <a class="btn btn-pwa" href="https://amu0630.github.io/kpbl">
-        <span class="btn-icon">💻</span>
-        <span>Windows / Mac 桌面<span class="btn-label"><br>Edge/Chrome 打开 → 地址栏安装</span></span>
-      </a>
-    </div>
+    <!-- Android -->    <a class="btn btn-android" href="https://amu0630.github.io/kpbl">
+      <span class="btn-icon">🤖</span>
+      <span>Android<span class="btn-label"><br>Chrome 打开 → 菜单 → 添加到主屏幕（全屏无地址栏）</span></span>
+    </a>
+    <!-- iOS -->    <a class="btn btn-ios" href="https://amu0630.github.io/kpbl">
+      <span class="btn-icon">🍎</span>
+      <span>iPhone / iPad<span class="btn-label"><br>Safari 打开 → 分享 → 添加到主屏幕</span></span>
+    </a>
+    <!-- Desktop -->    <a class="btn btn-pwa" href="https://amu0630.github.io/kpbl">
+      <span class="btn-icon">💻</span>
+      <span>Windows / Mac<span class="btn-label"><br>Edge/Chrome 打开 → 地址栏点安装图标</span></span>
+    </a>
   </div>
-  <p class="footer">v1.0.0 · <a href="https://github.com/amu0630/kpbl">GitHub</a></p>
+  <p class="footer">
+    v1.0.0 · 
+    <a href="https://ghproxy.net/https://github.com/amu0630/kpbl/releases/download/v1.0.0/kapibala-timer.apk">APK 备用</a>
+    · <a href="https://github.com/amu0630/kpbl">GitHub</a>
+  </p>
 </div>
 </body>
 </html>
